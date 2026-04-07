@@ -1,0 +1,52 @@
+svg.viewport-mover {
+  overflow: visible;
+
+  > rect {
+    fill: transparent;
+    stroke: pink;
+    stroke-width: 2px;
+    pointer-events: none;
+  }
+
+  > svg {
+    overflow: visible;
+    fill: white;
+    stroke: black;
+    stroke-width: 1px;
+    r: 1rem;
+
+    > circle {
+      fill: white;
+      stroke: black;
+      stroke-width: 1px;
+      r: 16px;
+    }
+
+    &.nw {
+      cursor: nwse-resize;
+    }
+
+    &.ne {
+      cursor: nesw-resize;
+    }
+
+    &.sw {
+      cursor: nesw-resize;
+    }
+
+    &.se {
+      cursor: nwse-resize;
+    }
+
+    &.move {
+      cursor: move;
+    }
+
+    &.rotate {
+      cursor: ew-resize;
+      > path {
+        fill: none;
+      }
+    }
+  }
+}
