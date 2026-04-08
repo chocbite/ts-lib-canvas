@@ -10,4 +10,6 @@ const elem = new ViewportElementTest();
 const elem_dynamic = new ViewportElementDynamicTest();
 vp.elements = [elem, elem_dynamic];
 
-elem_dynamic.position_x = 50;
+window.elem = elem;
+window.elem_dynamic = elem_dynamic;
+window.viewport = vp;
