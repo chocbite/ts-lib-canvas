@@ -39,10 +39,14 @@ rotate_sym.appendChild(
   svg.attr(material_action_autorenew_rounded()).a("x", "-12").a("y", "-12")
     .elem,
 );
-const rc_indicator = svg.svg(16, 16, "0 0 16 16").cl("rotation-center").elem;
-rc_indicator.appendChild(svg.create("circle").elem);
-rc_indicator.appendChild(svg.line(-6, 0, 6, 0).elem);
-rc_indicator.appendChild(svg.line(0, -6, 0, 6).elem);
+const rotation_center_indicator = svg
+  .svg(16, 16, "0 0 16 16")
+  .cl("rotation-center").elem;
+rotation_center_indicator.appendChild(svg.create("circle").elem);
+rotation_center_indicator.appendChild(svg.line(-6, 0, 6, 0).elem);
+rotation_center_indicator.appendChild(svg.line(0, -6, 0, 6).elem);
+
+const DEG_TO_RAD = Math.PI / 180;
 
 export class ViewportMover {
   #canvas: SVGSVGElement = svg.create("svg").cl("viewport-mover").elem;
@@ -55,7 +59,9 @@ export class ViewportMover {
   #se_corner = this.#canvas.appendChild(node_clone(se));
   #move = this.#canvas.appendChild(node_clone(move));
   #rotate = this.#canvas.appendChild(node_clone(rotate_sym));
-  #rc_indicator = this.#canvas.appendChild(node_clone(rc_indicator));
+  #rc_indicator = this.#canvas.appendChild(
+    node_clone(rotation_center_indicator),
+  );
   #scale_buffer = 1;
   #grid_x_buffer = 1;
   #grid_y_buffer = 1;
@@ -127,7 +133,7 @@ export class ViewportMover {
       const initial_h = this.#height;
       const initial_px = this.#position_x;
       const initial_py = this.#position_y;
-      const rad = this.#rotation * Math.PI / 180;
+      const rad = this.#rotation * DEG_TO_RAD;
       const cos_r = Math.cos(rad);
       const sin_r = Math.sin(rad);
       handle.onpointermove = (ev) => {
@@ -183,7 +189,7 @@ export class ViewportMover {
       const initial_py = this.#position_y;
       const dx = this.#width / 2 - this.#rotation_center_x;
       const dy = this.#height / 2 - this.#rotation_center_y;
-      const rad_old = initial_rotation * Math.PI / 180;
+      const rad_old = initial_rotation * DEG_TO_RAD;
       const cos_old = Math.cos(rad_old);
       const sin_old = Math.sin(rad_old);
       this.#rotate.onpointermove = (ev) => {
@@ -193,8 +199,8 @@ export class ViewportMover {
           ev.clientX - center.x,
         );
         const new_rotation =
-          initial_rotation + (current_angle - initial_angle) * 180 / Math.PI;
-        const rad_new = new_rotation * Math.PI / 180;
+          initial_rotation + (current_angle - initial_angle) / DEG_TO_RAD;
+        const rad_new = new_rotation * DEG_TO_RAD;
         const cos_new = Math.cos(rad_new);
         const sin_new = Math.sin(rad_new);
         const shift_x =
