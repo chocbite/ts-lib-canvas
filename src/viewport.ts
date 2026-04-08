@@ -4,7 +4,7 @@ import { ok } from "@chocbite/ts-lib-result";
 import type { State, StateInferSub } from "@chocbite/ts-lib-state";
 import { state } from "@chocbite/ts-lib-state";
 import { svg } from "@chocbite/ts-lib-svg";
-import type { ViewportElement } from "@libEditor";
+import type { ViewportElement } from "./viewport_element";
 import "./viewport.scss";
 import { ViewportMover } from "./viewport_mover";
 
