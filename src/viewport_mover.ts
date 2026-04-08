@@ -138,6 +138,8 @@ export class ViewportMover {
       const initial_h = this.#height;
       const initial_px = this.#position_x;
       const initial_py = this.#position_y;
+      const initial_rcx = this.#rotation_center_x;
+      const initial_rcy = this.#rotation_center_y;
       const rad = this.#rotation * DEG_TO_RAD;
       const cos_r = Math.cos(rad);
       const sin_r = Math.sin(rad);
@@ -147,8 +149,18 @@ export class ViewportMover {
         const canvas_dy = (ev.clientY - initial_y) / this.#scale_buffer;
         const local_dx = cos_r * canvas_dx + sin_r * canvas_dy;
         const local_dy = -sin_r * canvas_dx + cos_r * canvas_dy;
-        const new_w = Math.max(1, initial_w + sx * local_dx);
-        const new_h = Math.max(1, initial_h + sy * local_dy);
+        let new_w = Math.max(1, initial_w + sx * local_dx);
+        let new_h = Math.max(1, initial_h + sy * local_dy);
+        if (!ev.shiftKey) {
+          new_w = Math.round(new_w);
+          new_h = Math.round(new_h);
+        }
+        const new_rcx =
+          initial_w > 0 ? initial_rcx * (new_w / initial_w) : initial_rcx;
+        const new_rcy =
+          initial_h > 0 ? initial_rcy * (new_h / initial_h) : initial_rcy;
+        const drc_x = initial_rcx - new_rcx;
+        const drc_y = initial_rcy - new_rcy;
         const delta_w = new_w - initial_w;
         const delta_h = new_h - initial_h;
         let new_px = initial_px;
@@ -161,6 +173,15 @@ export class ViewportMover {
           new_px += delta_h * sin_r;
           new_py -= delta_h * cos_r;
         }
+        new_px += drc_x * (1 - cos_r) + drc_y * sin_r;
+        new_py += -drc_x * sin_r + drc_y * (1 - cos_r);
+        this.#rotation_center_x = new_rcx;
+        this.#rotation_center_y = new_rcy;
+        if (this.#element) {
+          this.#element.rotation_center_x = new_rcx;
+          this.#element.rotation_center_y = new_rcy;
+        }
+        this.#update_rc_indicator();
         this.width = new_w;
         this.height = new_h;
         this.position_x = new_px;
@@ -203,8 +224,11 @@ export class ViewportMover {
           ev.clientY - center.y,
           ev.clientX - center.x,
         );
-        const new_rotation =
+        const raw_rotation =
           initial_rotation + (current_angle - initial_angle) / DEG_TO_RAD;
+        const new_rotation = ev.shiftKey
+          ? raw_rotation
+          : raw_rotation - (raw_rotation % this.#grid_rotate_buffer);
         const rad_new = new_rotation * DEG_TO_RAD;
         const cos_new = Math.cos(rad_new);
         const sin_new = Math.sin(rad_new);
@@ -218,9 +242,7 @@ export class ViewportMover {
           this.#element.position_x = this.#position_x;
           this.#element.position_y = this.#position_y;
         }
-        this.rotation = ev.shiftKey
-          ? new_rotation
-          : new_rotation - (new_rotation % this.#grid_rotate_buffer);
+        this.rotation = new_rotation;
       };
       this.#rotate.onpointerup = (ev) => {
         this.#rotate.releasePointerCapture(ev.pointerId);
