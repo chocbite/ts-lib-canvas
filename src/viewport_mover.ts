@@ -33,12 +33,16 @@ move.appendChild(svg.isosceles_triangle(0, -10, 8, 6).rotate(0, 0, -10).elem);
 move.appendChild(svg.line(-10, 0, 10, 0).elem);
 move.appendChild(svg.isosceles_triangle(-10, 0, 8, 6).rotate(270, -10, 0).elem);
 move.appendChild(svg.isosceles_triangle(10, 0, 8, 6).rotate(90, 10, 0).elem);
-const rotate = svg.svg(32, 32, "0 0 32 32").a("y", "-30").cl("rotate").elem;
-rotate.appendChild(svg.create("circle").elem);
-rotate.appendChild(
+const rotate_sym = svg.svg(32, 32, "0 0 32 32").a("y", "-30").cl("rotate").elem;
+rotate_sym.appendChild(svg.create("circle").elem);
+rotate_sym.appendChild(
   svg.attr(material_action_autorenew_rounded()).a("x", "-12").a("y", "-12")
     .elem,
 );
+const rc_indicator = svg.svg(16, 16, "0 0 16 16").cl("rotation-center").elem;
+rc_indicator.appendChild(svg.create("circle").elem);
+rc_indicator.appendChild(svg.line(-6, 0, 6, 0).elem);
+rc_indicator.appendChild(svg.line(0, -6, 0, 6).elem);
 
 export class ViewportMover {
   #canvas: SVGSVGElement = svg.create("svg").cl("viewport-mover").elem;
@@ -50,7 +54,8 @@ export class ViewportMover {
   #sw_corner = this.#canvas.appendChild(node_clone(sw));
   #se_corner = this.#canvas.appendChild(node_clone(se));
   #move = this.#canvas.appendChild(node_clone(move));
-  #rotate = this.#canvas.appendChild(node_clone(rotate));
+  #rotate = this.#canvas.appendChild(node_clone(rotate_sym));
+  #rc_indicator = this.#canvas.appendChild(node_clone(rc_indicator));
   #scale_buffer = 1;
   #grid_x_buffer = 1;
   #grid_y_buffer = 1;
@@ -62,12 +67,14 @@ export class ViewportMover {
   ) {
     scale.sub((val) => {
       this.#scale_buffer = val.value;
-      this.#nw_corner.setAttribute("transform", `scale(${1 / val.value})`);
-      this.#ne_corner.setAttribute("transform", `scale(${1 / val.value})`);
-      this.#sw_corner.setAttribute("transform", `scale(${1 / val.value})`);
-      this.#se_corner.setAttribute("transform", `scale(${1 / val.value})`);
-      this.#move.setAttribute("transform", `scale(${1 / val.value})`);
-      this.#rotate.setAttribute("transform", `scale(${1 / val.value})`);
+      const s = `scale(${1 / val.value})`;
+      this.#nw_corner.setAttribute("transform", s);
+      this.#ne_corner.setAttribute("transform", s);
+      this.#sw_corner.setAttribute("transform", s);
+      this.#se_corner.setAttribute("transform", s);
+      this.#move.setAttribute("transform", s);
+      this.#rotate.setAttribute("transform", s);
+      this.#rc_indicator.setAttribute("transform", s);
     }, true);
     grid_x.sub((val) => {
       this.#grid_x_buffer = val.value;
@@ -101,6 +108,114 @@ export class ViewportMover {
         this.#move.onpointermove = null;
       };
     };
+    this.#setup_corner(this.#nw_corner, -1, -1);
+    this.#setup_corner(this.#ne_corner, 1, -1);
+    this.#setup_corner(this.#sw_corner, -1, 1);
+    this.#setup_corner(this.#se_corner, 1, 1);
+    this.#setup_rotation();
+  }
+
+  #setup_corner(handle: SVGSVGElement, sx: number, sy: number) {
+    handle.onpointerdown = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (!this.#element) return;
+      handle.setPointerCapture(e.pointerId);
+      const initial_x = e.clientX;
+      const initial_y = e.clientY;
+      const initial_w = this.#width;
+      const initial_h = this.#height;
+      const initial_px = this.#position_x;
+      const initial_py = this.#position_y;
+      const rad = this.#rotation * Math.PI / 180;
+      const cos_r = Math.cos(rad);
+      const sin_r = Math.sin(rad);
+      handle.onpointermove = (ev) => {
+        if (!this.#element) return;
+        const canvas_dx = (ev.clientX - initial_x) / this.#scale_buffer;
+        const canvas_dy = (ev.clientY - initial_y) / this.#scale_buffer;
+        const local_dx = cos_r * canvas_dx + sin_r * canvas_dy;
+        const local_dy = -sin_r * canvas_dx + cos_r * canvas_dy;
+        const new_w = Math.max(1, initial_w + sx * local_dx);
+        const new_h = Math.max(1, initial_h + sy * local_dy);
+        const delta_w = new_w - initial_w;
+        const delta_h = new_h - initial_h;
+        let new_px = initial_px;
+        let new_py = initial_py;
+        if (sx < 0) {
+          new_px -= delta_w * cos_r;
+          new_py -= delta_w * sin_r;
+        }
+        if (sy < 0) {
+          new_px += delta_h * sin_r;
+          new_py -= delta_h * cos_r;
+        }
+        this.width = new_w;
+        this.height = new_h;
+        this.position_x = new_px;
+        this.position_y = new_py;
+      };
+      handle.onpointerup = (ev) => {
+        handle.releasePointerCapture(ev.pointerId);
+        handle.onpointermove = null;
+      };
+    };
+  }
+
+  #setup_rotation() {
+    this.#rotate.onpointerdown = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (!this.#element) return;
+      this.#rotate.setPointerCapture(e.pointerId);
+      const ctm = this.#canvas.getScreenCTM();
+      if (!ctm) return;
+      const center = new DOMPoint(
+        this.#width / 2,
+        this.#height / 2,
+      ).matrixTransform(ctm);
+      const initial_angle = Math.atan2(
+        e.clientY - center.y,
+        e.clientX - center.x,
+      );
+      const initial_rotation = this.#rotation;
+      const initial_px = this.#position_x;
+      const initial_py = this.#position_y;
+      const dx = this.#width / 2 - this.#rotation_center_x;
+      const dy = this.#height / 2 - this.#rotation_center_y;
+      const rad_old = initial_rotation * Math.PI / 180;
+      const cos_old = Math.cos(rad_old);
+      const sin_old = Math.sin(rad_old);
+      this.#rotate.onpointermove = (ev) => {
+        if (!this.#element) return;
+        const current_angle = Math.atan2(
+          ev.clientY - center.y,
+          ev.clientX - center.x,
+        );
+        const new_rotation =
+          initial_rotation + (current_angle - initial_angle) * 180 / Math.PI;
+        const rad_new = new_rotation * Math.PI / 180;
+        const cos_new = Math.cos(rad_new);
+        const sin_new = Math.sin(rad_new);
+        const shift_x =
+          dx * (cos_old - cos_new) - dy * (sin_old - sin_new);
+        const shift_y =
+          dx * (sin_old - sin_new) + dy * (cos_old - cos_new);
+        this.#position_x = initial_px + shift_x;
+        this.#position_y = initial_py + shift_y;
+        this.#canvas.setAttribute("x", String(this.#position_x));
+        this.#canvas.setAttribute("y", String(this.#position_y));
+        if (this.#element) {
+          this.#element.position_x = this.#position_x;
+          this.#element.position_y = this.#position_y;
+        }
+        this.rotation = new_rotation;
+      };
+      this.#rotate.onpointerup = (ev) => {
+        this.#rotate.releasePointerCapture(ev.pointerId);
+        this.#rotate.onpointermove = null;
+      };
+    };
   }
 
   #position_x = 0;
@@ -108,6 +223,7 @@ export class ViewportMover {
     this.#canvas.setAttribute("x", String(value));
     this.#position_x = value;
     if (this.#element) this.#element.position_x = value;
+    this.#update_mover_transform();
   }
 
   #position_y = 0;
@@ -115,6 +231,30 @@ export class ViewportMover {
     this.#canvas.setAttribute("y", String(value));
     this.#position_y = value;
     if (this.#element) this.#element.position_y = value;
+    this.#update_mover_transform();
+  }
+
+  #rotation = 0;
+  set rotation(value: number) {
+    this.#rotation = value;
+    if (this.#element) this.#element.rotation = value;
+    this.#update_mover_transform();
+  }
+
+  #rotation_center_x = 0;
+  #rotation_center_y = 0;
+
+  #update_mover_transform() {
+    if (this.#rotation === 0) {
+      this.#canvas.removeAttribute("transform");
+    } else {
+      const cx = this.#position_x + this.#rotation_center_x;
+      const cy = this.#position_y + this.#rotation_center_y;
+      this.#canvas.setAttribute(
+        "transform",
+        `rotate(${this.#rotation} ${cx} ${cy})`,
+      );
+    }
   }
 
   #width = 0;
@@ -135,6 +275,7 @@ export class ViewportMover {
     this.#rotate.setAttribute("x", String(value / 2));
     this.#rotate.setAttribute("transform-origin", `${value / 2} 0`);
     this.#width = value;
+    if (this.#element) this.#element.width = value;
   }
   #height = 0;
   set height(value: number) {
@@ -149,6 +290,16 @@ export class ViewportMover {
       `${this.#width / 2} ${value / 2}`,
     );
     this.#height = value;
+    if (this.#element) this.#element.height = value;
+  }
+
+  #update_rc_indicator() {
+    this.#rc_indicator.setAttribute("x", String(this.#rotation_center_x));
+    this.#rc_indicator.setAttribute("y", String(this.#rotation_center_y));
+    this.#rc_indicator.setAttribute(
+      "transform-origin",
+      `${this.#rotation_center_x} ${this.#rotation_center_y}`,
+    );
   }
 
   #element?: ViewportElement;
@@ -159,7 +310,12 @@ export class ViewportMover {
     this.height = element.height;
     this.position_x = element.position_x;
     this.position_y = element.position_y;
+    this.#rotation = element.rotation;
+    this.#rotation_center_x = element.rotation_center_x;
+    this.#rotation_center_y = element.rotation_center_y;
+    this.#update_rc_indicator();
     this.#element = element;
+    this.#update_mover_transform();
     canvas.appendChild(this.#canvas);
   }
 

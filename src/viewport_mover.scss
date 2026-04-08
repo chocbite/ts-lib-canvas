@@ -48,5 +48,19 @@ svg.viewport-mover {
         fill: none;
       }
     }
+
+    &.rotation-center {
+      pointer-events: none;
+      > circle {
+        fill: none;
+        stroke: pink;
+        stroke-width: 1px;
+        r: 5px;
+      }
+      > line {
+        stroke: pink;
+        stroke-width: 1px;
+      }
+    }
   }
 }
