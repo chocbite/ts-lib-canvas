@@ -93,6 +93,54 @@ export class ViewportMover {
     grid_rotate.sub((val) => {
       this.#grid_rotate_buffer = val.value;
     }, true);
+    this.#setup_position();
+    this.#setup_corner(this.#nw_corner, -1, -1);
+    this.#setup_corner(this.#ne_corner, 1, -1);
+    this.#setup_corner(this.#sw_corner, -1, 1);
+    this.#setup_corner(this.#se_corner, 1, 1);
+    this.#setup_rotation();
+  }
+  #update_mover_transform() {
+    if (this.#rotation === 0) {
+      this.#canvas.removeAttribute("transform");
+    } else {
+      const cx = this.#position_x + this.#rotation_center_x;
+      const cy = this.#position_y + this.#rotation_center_y;
+      this.#canvas.setAttribute(
+        "transform",
+        `rotate(${this.#rotation} ${cx} ${cy})`,
+      );
+    }
+  }
+
+  #element?: ViewportElement;
+  attach_to_element(element: ViewportElement, canvas: SVGSVGElement) {
+    this.#canvas.setAttribute("x", element.position_x.toString());
+    this.#canvas.setAttribute("y", element.position_y.toString());
+    this.width = element.width;
+    this.height = element.height;
+    this.position_x = element.position_x;
+    this.position_y = element.position_y;
+    this.#rotation = element.rotation;
+    this.#rotation_center_x = element.rotation_center_x;
+    this.#rotation_center_y = element.rotation_center_y;
+    this.#update_rc_indicator();
+    this.#element = element;
+    this.#update_mover_transform();
+    canvas.appendChild(this.#canvas);
+  }
+
+  dettach_from_element() {
+    this.#element = undefined;
+    this.#canvas.remove();
+  }
+  //      _____   ____   _____ _____ _______ _____ ____  _   _
+  //     |  __ \ / __ \ / ____|_   _|__   __|_   _/ __ \| \ | |
+  //     | |__) | |  | | (___   | |    | |    | || |  | |  \| |
+  //     |  ___/| |  | |\___ \  | |    | |    | || |  | | . ` |
+  //     | |    | |__| |____) |_| |_   | |   _| || |__| | |\  |
+  //     |_|     \____/|_____/|_____|  |_|  |_____\____/|_| \_|
+  #setup_position() {
     this.#move.onpointerdown = (e) => {
       e.preventDefault();
       e.stopPropagation();
@@ -119,13 +167,113 @@ export class ViewportMover {
         this.#move.onpointermove = null;
       };
     };
-    this.#setup_corner(this.#nw_corner, -1, -1);
-    this.#setup_corner(this.#ne_corner, 1, -1);
-    this.#setup_corner(this.#sw_corner, -1, 1);
-    this.#setup_corner(this.#se_corner, 1, 1);
-    this.#setup_rotation();
   }
 
+  #position_x = 0;
+  set position_x(value: number) {
+    this.#canvas.setAttribute("x", String(value));
+    this.#position_x = value;
+    if (this.#element) this.#element.position_x = value;
+    this.#update_mover_transform();
+  }
+
+  #position_y = 0;
+  set position_y(value: number) {
+    this.#canvas.setAttribute("y", String(value));
+    this.#position_y = value;
+    if (this.#element) this.#element.position_y = value;
+    this.#update_mover_transform();
+  }
+
+  //      _____   ____ _______    _______ _____ ____  _   _
+  //     |  __ \ / __ \__   __|/\|__   __|_   _/ __ \| \ | |
+  //     | |__) | |  | | | |  /  \  | |    | || |  | |  \| |
+  //     |  _  /| |  | | | | / /\ \ | |    | || |  | | . ` |
+  //     | | \ \| |__| | | |/ ____ \| |   _| || |__| | |\  |
+  //     |_|  \_\\____/  |_/_/    \_\_|  |_____\____/|_| \_|
+  #setup_rotation() {
+    this.#rotate.onpointerdown = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (!this.#element) return;
+      this.#rotate.setPointerCapture(e.pointerId);
+      const ctm = this.#canvas.getScreenCTM();
+      if (!ctm) return;
+      const center = new DOMPoint(
+        this.#width / 2,
+        this.#height / 2,
+      ).matrixTransform(ctm);
+      const initial_angle = Math.atan2(
+        e.clientY - center.y,
+        e.clientX - center.x,
+      );
+      const initial_rotation = this.#rotation;
+      const initial_px = this.#position_x;
+      const initial_py = this.#position_y;
+      const dx = this.#width / 2 - this.#rotation_center_x;
+      const dy = this.#height / 2 - this.#rotation_center_y;
+      const rad_old = initial_rotation * DEG_TO_RAD;
+      const cos_old = Math.cos(rad_old);
+      const sin_old = Math.sin(rad_old);
+      this.#rotate.onpointermove = (ev) => {
+        if (!this.#element) return;
+        const current_angle = Math.atan2(
+          ev.clientY - center.y,
+          ev.clientX - center.x,
+        );
+        const raw_rotation =
+          initial_rotation + (current_angle - initial_angle) / DEG_TO_RAD;
+        const new_rotation = ev.shiftKey
+          ? raw_rotation
+          : raw_rotation - (raw_rotation % this.#grid_rotate_buffer);
+        const rad_new = new_rotation * DEG_TO_RAD;
+        const cos_new = Math.cos(rad_new);
+        const sin_new = Math.sin(rad_new);
+        // Adjust position so the element center stays visually fixed
+        // despite the SVG rotation pivot being at the rotation center.
+        const shift_x = dx * (cos_old - cos_new) - dy * (sin_old - sin_new);
+        const shift_y = dx * (sin_old - sin_new) + dy * (cos_old - cos_new);
+        this.#position_x = initial_px + shift_x;
+        this.#position_y = initial_py + shift_y;
+        this.#canvas.setAttribute("x", String(this.#position_x));
+        this.#canvas.setAttribute("y", String(this.#position_y));
+        if (this.#element) {
+          this.#element.position_x = this.#position_x;
+          this.#element.position_y = this.#position_y;
+        }
+        this.rotation = new_rotation;
+      };
+      this.#rotate.onpointerup = (ev) => {
+        this.#rotate.releasePointerCapture(ev.pointerId);
+        this.#rotate.onpointermove = null;
+      };
+    };
+  }
+  #update_rc_indicator() {
+    this.#rc_indicator.setAttribute("x", String(this.#rotation_center_x));
+    this.#rc_indicator.setAttribute("y", String(this.#rotation_center_y));
+    this.#rc_indicator.setAttribute(
+      "transform-origin",
+      `${this.#rotation_center_x} ${this.#rotation_center_y}`,
+    );
+  }
+
+  #rotation = 0;
+  set rotation(value: number) {
+    this.#rotation = value;
+    if (this.#element) this.#element.rotation = value;
+    this.#update_mover_transform();
+  }
+
+  #rotation_center_x = 0;
+  #rotation_center_y = 0;
+
+  //       _____ _____ ____________
+  //      / ____|_   _|___  /  ____|
+  //     | (___   | |    / /| |__
+  //      \___ \  | |   / / |  __|
+  //      ____) |_| |_ / /__| |____
+  //     |_____/|_____/_____|______|
   #setup_corner(handle: SVGSVGElement, sx: number, sy: number) {
     handle.onpointerdown = (e) => {
       e.preventDefault();
@@ -196,104 +344,6 @@ export class ViewportMover {
     };
   }
 
-  #setup_rotation() {
-    this.#rotate.onpointerdown = (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      if (!this.#element) return;
-      this.#rotate.setPointerCapture(e.pointerId);
-      const ctm = this.#canvas.getScreenCTM();
-      if (!ctm) return;
-      const center = new DOMPoint(
-        this.#width / 2,
-        this.#height / 2,
-      ).matrixTransform(ctm);
-      const initial_angle = Math.atan2(
-        e.clientY - center.y,
-        e.clientX - center.x,
-      );
-      const initial_rotation = this.#rotation;
-      const initial_px = this.#position_x;
-      const initial_py = this.#position_y;
-      const dx = this.#width / 2 - this.#rotation_center_x;
-      const dy = this.#height / 2 - this.#rotation_center_y;
-      const rad_old = initial_rotation * DEG_TO_RAD;
-      const cos_old = Math.cos(rad_old);
-      const sin_old = Math.sin(rad_old);
-      this.#rotate.onpointermove = (ev) => {
-        if (!this.#element) return;
-        const current_angle = Math.atan2(
-          ev.clientY - center.y,
-          ev.clientX - center.x,
-        );
-        const raw_rotation =
-          initial_rotation + (current_angle - initial_angle) / DEG_TO_RAD;
-        const new_rotation = ev.shiftKey
-          ? raw_rotation
-          : raw_rotation - (raw_rotation % this.#grid_rotate_buffer);
-        const rad_new = new_rotation * DEG_TO_RAD;
-        const cos_new = Math.cos(rad_new);
-        const sin_new = Math.sin(rad_new);
-        // Adjust position so the element center stays visually fixed
-        // despite the SVG rotation pivot being at the rotation center.
-        const shift_x = dx * (cos_old - cos_new) - dy * (sin_old - sin_new);
-        const shift_y = dx * (sin_old - sin_new) + dy * (cos_old - cos_new);
-        this.#position_x = initial_px + shift_x;
-        this.#position_y = initial_py + shift_y;
-        this.#canvas.setAttribute("x", String(this.#position_x));
-        this.#canvas.setAttribute("y", String(this.#position_y));
-        if (this.#element) {
-          this.#element.position_x = this.#position_x;
-          this.#element.position_y = this.#position_y;
-        }
-        this.rotation = new_rotation;
-      };
-      this.#rotate.onpointerup = (ev) => {
-        this.#rotate.releasePointerCapture(ev.pointerId);
-        this.#rotate.onpointermove = null;
-      };
-    };
-  }
-
-  #position_x = 0;
-  set position_x(value: number) {
-    this.#canvas.setAttribute("x", String(value));
-    this.#position_x = value;
-    if (this.#element) this.#element.position_x = value;
-    this.#update_mover_transform();
-  }
-
-  #position_y = 0;
-  set position_y(value: number) {
-    this.#canvas.setAttribute("y", String(value));
-    this.#position_y = value;
-    if (this.#element) this.#element.position_y = value;
-    this.#update_mover_transform();
-  }
-
-  #rotation = 0;
-  set rotation(value: number) {
-    this.#rotation = value;
-    if (this.#element) this.#element.rotation = value;
-    this.#update_mover_transform();
-  }
-
-  #rotation_center_x = 0;
-  #rotation_center_y = 0;
-
-  #update_mover_transform() {
-    if (this.#rotation === 0) {
-      this.#canvas.removeAttribute("transform");
-    } else {
-      const cx = this.#position_x + this.#rotation_center_x;
-      const cy = this.#position_y + this.#rotation_center_y;
-      this.#canvas.setAttribute(
-        "transform",
-        `rotate(${this.#rotation} ${cx} ${cy})`,
-      );
-    }
-  }
-
   #width = 0;
   set width(value: number) {
     this.#outline.setAttribute("width", (value + 2).toString());
@@ -328,36 +378,5 @@ export class ViewportMover {
     );
     this.#height = value;
     if (this.#element) this.#element.height = value;
-  }
-
-  #update_rc_indicator() {
-    this.#rc_indicator.setAttribute("x", String(this.#rotation_center_x));
-    this.#rc_indicator.setAttribute("y", String(this.#rotation_center_y));
-    this.#rc_indicator.setAttribute(
-      "transform-origin",
-      `${this.#rotation_center_x} ${this.#rotation_center_y}`,
-    );
-  }
-
-  #element?: ViewportElement;
-  attach_to_element(element: ViewportElement, canvas: SVGSVGElement) {
-    this.#canvas.setAttribute("x", element.position_x.toString());
-    this.#canvas.setAttribute("y", element.position_y.toString());
-    this.width = element.width;
-    this.height = element.height;
-    this.position_x = element.position_x;
-    this.position_y = element.position_y;
-    this.#rotation = element.rotation;
-    this.#rotation_center_x = element.rotation_center_x;
-    this.#rotation_center_y = element.rotation_center_y;
-    this.#update_rc_indicator();
-    this.#element = element;
-    this.#update_mover_transform();
-    canvas.appendChild(this.#canvas);
-  }
-
-  dettach_from_element() {
-    this.#element = undefined;
-    this.#canvas.remove();
   }
 }
