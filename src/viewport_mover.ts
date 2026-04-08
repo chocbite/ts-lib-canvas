@@ -199,22 +199,17 @@ export class ViewportMover {
       this.#rotate.setPointerCapture(e.pointerId);
       const ctm = this.#canvas.getScreenCTM();
       if (!ctm) return;
+      // Use the rotation center as the angle reference so the mover and
+      // element both rotate around the same point without position shifts.
       const center = new DOMPoint(
-        this.#width / 2,
-        this.#height / 2,
+        this.#rotation_center_x,
+        this.#rotation_center_y,
       ).matrixTransform(ctm);
       const initial_angle = Math.atan2(
         e.clientY - center.y,
         e.clientX - center.x,
       );
       const initial_rotation = this.#rotation;
-      const initial_px = this.#position_x;
-      const initial_py = this.#position_y;
-      const dx = this.#width / 2 - this.#rotation_center_x;
-      const dy = this.#height / 2 - this.#rotation_center_y;
-      const rad_old = initial_rotation * DEG_TO_RAD;
-      const cos_old = Math.cos(rad_old);
-      const sin_old = Math.sin(rad_old);
       this.#rotate.onpointermove = (ev) => {
         if (!this.#element) return;
         const current_angle = Math.atan2(
@@ -223,25 +218,9 @@ export class ViewportMover {
         );
         const raw_rotation =
           initial_rotation + (current_angle - initial_angle) / DEG_TO_RAD;
-        const new_rotation = ev.shiftKey
+        this.rotation = ev.shiftKey
           ? raw_rotation
           : raw_rotation - (raw_rotation % this.#grid_rotate_buffer);
-        const rad_new = new_rotation * DEG_TO_RAD;
-        const cos_new = Math.cos(rad_new);
-        const sin_new = Math.sin(rad_new);
-        // Adjust position so the element center stays visually fixed
-        // despite the SVG rotation pivot being at the rotation center.
-        const shift_x = dx * (cos_old - cos_new) - dy * (sin_old - sin_new);
-        const shift_y = dx * (sin_old - sin_new) + dy * (cos_old - cos_new);
-        this.#position_x = initial_px + shift_x;
-        this.#position_y = initial_py + shift_y;
-        this.#canvas.setAttribute("x", String(this.#position_x));
-        this.#canvas.setAttribute("y", String(this.#position_y));
-        if (this.#element) {
-          this.#element.position_x = this.#position_x;
-          this.#element.position_y = this.#position_y;
-        }
-        this.rotation = new_rotation;
       };
       this.#rotate.onpointerup = (ev) => {
         this.#rotate.releasePointerCapture(ev.pointerId);
