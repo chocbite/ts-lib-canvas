@@ -155,8 +155,8 @@ export class ViewportMover {
   attach_to_element(element: ViewportElement, canvas: SVGSVGElement) {
     this.#canvas.setAttribute("x", element.position_x.toString());
     this.#canvas.setAttribute("y", element.position_y.toString());
-    this.width = element.default_width();
-    this.height = element.default_height();
+    this.width = element.width;
+    this.height = element.height;
     this.position_x = element.position_x;
     this.position_y = element.position_y;
     this.#element = element;

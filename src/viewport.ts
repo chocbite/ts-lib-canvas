@@ -4,8 +4,8 @@ import { ok } from "@chocbite/ts-lib-result";
 import type { State, StateInferSub } from "@chocbite/ts-lib-state";
 import { state } from "@chocbite/ts-lib-state";
 import { svg } from "@chocbite/ts-lib-svg";
-import type { ViewportElement } from "@libEditor";
 import "./viewport.scss";
+import type { ViewportElement } from "./viewport_element";
 import { ViewportMover } from "./viewport_mover";
 
 export class Viewport extends Base {
@@ -302,8 +302,10 @@ export class Viewport extends Base {
   #state_sub?: StateInferSub<State<ViewportElement[]>>;
 
   set elements(elements: ViewportElement[] | State<ViewportElement[]>) {
-    if (this.#state_sub) this.detach_state(this.#state_sub);
-    this.#state_sub = undefined;
+    if (this.#state_sub) {
+      this.detach_state(this.#state_sub);
+      this.#state_sub = undefined;
+    }
     if (state.is.state(elements)) {
       this.#state_sub = this.attach_state(elements, (r) =>
         this.#update_rows(r.ok ? r.value : []),
@@ -312,9 +314,12 @@ export class Viewport extends Base {
   }
 
   #update_rows(rows: readonly ViewportElement[]) {
-    if (rows.length === 0) this.#canvas_elements.replaceChildren();
+    if (rows.length === 0) {
+      this.#canvas_elements.replaceChildren();
+      return;
+    }
     const read = state.a.read(rows);
-    for (let i = 0; i < rows.length; i++) {
+    for (let i = 0; i < read.length; i++) {
       const row = read[i];
       if (row.type === "fresh")
         this.#canvas_elements.replaceChildren(
