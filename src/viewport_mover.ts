@@ -173,6 +173,8 @@ export class ViewportMover {
           new_px += delta_h * sin_r;
           new_py -= delta_h * cos_r;
         }
+        // Compensate position for the rotation pivot change so the
+        // anchor corner stays visually fixed on a rotated element.
         new_px += drc_x * (1 - cos_r) + drc_y * sin_r;
         new_py += -drc_x * sin_r + drc_y * (1 - cos_r);
         this.#rotation_center_x = new_rcx;
@@ -232,6 +234,8 @@ export class ViewportMover {
         const rad_new = new_rotation * DEG_TO_RAD;
         const cos_new = Math.cos(rad_new);
         const sin_new = Math.sin(rad_new);
+        // Adjust position so the element center stays visually fixed
+        // despite the SVG rotation pivot being at the rotation center.
         const shift_x = dx * (cos_old - cos_new) - dy * (sin_old - sin_new);
         const shift_y = dx * (sin_old - sin_new) + dy * (cos_old - cos_new);
         this.#position_x = initial_px + shift_x;
