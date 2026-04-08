@@ -51,7 +51,7 @@ const DEG_TO_RAD = Math.PI / 180;
 export class ViewportMover {
   #canvas: SVGSVGElement = svg.create("svg").cl("viewport-mover").elem;
   #outline = this.#canvas.appendChild(
-    svg.rectangle_from_corner(0, 0, 1, 1, 0).elem,
+    svg.rectangle_from_corner(-1, -1, 1, 1, 0).elem,
   );
   #nw_corner = this.#canvas.appendChild(node_clone(nw));
   #ne_corner = this.#canvas.appendChild(node_clone(ne));
@@ -65,11 +65,13 @@ export class ViewportMover {
   #scale_buffer = 1;
   #grid_x_buffer = 1;
   #grid_y_buffer = 1;
+  #grid_rotate_buffer = 0;
 
   constructor(
     scale: StateROS<number>,
     grid_x: StateROS<number>,
     grid_y: StateROS<number>,
+    grid_rotate: StateROS<number>,
   ) {
     scale.sub((val) => {
       this.#scale_buffer = val.value;
@@ -87,6 +89,9 @@ export class ViewportMover {
     }, true);
     grid_y.sub((val) => {
       this.#grid_y_buffer = val.value;
+    }, true);
+    grid_rotate.sub((val) => {
+      this.#grid_rotate_buffer = val.value;
     }, true);
     this.#move.onpointerdown = (e) => {
       e.preventDefault();
@@ -203,10 +208,8 @@ export class ViewportMover {
         const rad_new = new_rotation * DEG_TO_RAD;
         const cos_new = Math.cos(rad_new);
         const sin_new = Math.sin(rad_new);
-        const shift_x =
-          dx * (cos_old - cos_new) - dy * (sin_old - sin_new);
-        const shift_y =
-          dx * (sin_old - sin_new) + dy * (cos_old - cos_new);
+        const shift_x = dx * (cos_old - cos_new) - dy * (sin_old - sin_new);
+        const shift_y = dx * (sin_old - sin_new) + dy * (cos_old - cos_new);
         this.#position_x = initial_px + shift_x;
         this.#position_y = initial_py + shift_y;
         this.#canvas.setAttribute("x", String(this.#position_x));
@@ -215,7 +218,9 @@ export class ViewportMover {
           this.#element.position_x = this.#position_x;
           this.#element.position_y = this.#position_y;
         }
-        this.rotation = new_rotation;
+        this.rotation = ev.shiftKey
+          ? new_rotation
+          : new_rotation - (new_rotation % this.#grid_rotate_buffer);
       };
       this.#rotate.onpointerup = (ev) => {
         this.#rotate.releasePointerCapture(ev.pointerId);
@@ -265,7 +270,7 @@ export class ViewportMover {
 
   #width = 0;
   set width(value: number) {
-    this.#outline.setAttribute("width", value.toString());
+    this.#outline.setAttribute("width", (value + 2).toString());
     this.#ne_corner.setAttribute("x", String(value));
     this.#ne_corner.setAttribute("transform-origin", `${value} 0`);
     this.#se_corner.setAttribute("x", String(value));
@@ -285,7 +290,7 @@ export class ViewportMover {
   }
   #height = 0;
   set height(value: number) {
-    this.#outline.setAttribute("height", value.toString());
+    this.#outline.setAttribute("height", (value + 2).toString());
     this.#sw_corner.setAttribute("y", String(value));
     this.#sw_corner.setAttribute("transform-origin", `0 ${value}`);
     this.#se_corner.setAttribute("y", String(value));

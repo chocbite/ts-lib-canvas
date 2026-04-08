@@ -293,6 +293,12 @@ export class Viewport extends Base {
   });
   readonly grid_y = this.#grid_y.read_write;
 
+  #grid_rotate = state.rosw(ok(15), (value) => {
+    this.#grid_rotate.set_ok(value);
+    return sync_resolve(ok(undefined));
+  });
+  readonly grid_rotate = this.#grid_rotate.read_write;
+
   //      ______ _      ______ __  __ ______ _   _ _______ _____
   //     |  ____| |    |  ____|  \/  |  ____| \ | |__   __/ ____|
   //     | |__  | |    | |__  | \  / | |__  |  \| |  | | | (___
@@ -374,6 +380,7 @@ export class Viewport extends Base {
       this.#zoom,
       this.#grid_x,
       this.#grid_y,
+      this.#grid_rotate,
     )).attach_to_element(move, this.#canvas);
   }
 }

@@ -13,3 +13,4 @@ vp.elements = [elem, elem_dynamic];
 window.elem = elem;
 window.elem_dynamic = elem_dynamic;
 window.viewport = vp;
+vp.attach_mover(elem);

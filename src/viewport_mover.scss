@@ -3,8 +3,8 @@ svg.viewport-mover {
 
   > rect {
     fill: transparent;
-    stroke: pink;
-    stroke-width: 2px;
+    stroke: black;
+    stroke-dasharray: 2, 2;
     pointer-events: none;
   }
 
