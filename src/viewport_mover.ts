@@ -115,6 +115,9 @@ export class ViewportMover {
 
   #element?: ViewportElement;
   attach_to_element(element: ViewportElement, canvas: SVGSVGElement) {
+    // Clear the old element reference first so the property setters below
+    // don't propagate the new element's values back to the previous element.
+    this.#element = undefined;
     this.#canvas.setAttribute("x", element.position_x.toString());
     this.#canvas.setAttribute("y", element.position_y.toString());
     this.width = element.width;
