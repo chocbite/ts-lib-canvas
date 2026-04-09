@@ -220,6 +220,10 @@ export class Viewport extends Base {
         this.#detach_mover();
       }
     });
+    // Detach mover when the browser window loses focus
+    window.addEventListener("blur", () => {
+      this.#detach_mover();
+    });
   }
 
   #pan_coordinates(x?: number, y?: number) {
