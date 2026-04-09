@@ -130,7 +130,7 @@ export class ViewportMover {
     canvas.appendChild(this.#canvas);
   }
 
-  dettach_from_element() {
+  detach_from_element() {
     this.#element = undefined;
     this.#canvas.remove();
   }

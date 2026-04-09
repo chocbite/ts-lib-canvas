@@ -409,7 +409,7 @@ export class Viewport extends Base {
   }
 
   #detach_mover() {
-    this.#mover?.dettach_from_element();
+    this.#mover?.detach_from_element();
   }
 }
 define_element(Viewport);
