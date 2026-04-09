@@ -155,11 +155,11 @@ export class ViewportMover {
           const pos_x = (ev.offsetX - offset_x) / this.#scale_buffer + x;
           this.position_x = ev.shiftKey
             ? pos_x
-            : pos_x - (pos_x % this.#grid_x_buffer);
+            : Math.round(pos_x / this.#grid_x_buffer) * this.#grid_x_buffer;
           const pos_y = (ev.offsetY - offset_y) / this.#scale_buffer + y;
           this.position_y = ev.shiftKey
             ? pos_y
-            : pos_y - (pos_y % this.#grid_y_buffer);
+            : Math.round(pos_y / this.#grid_y_buffer) * this.#grid_y_buffer;
         }
       };
       this.#move.onpointerup = (ev) => {
@@ -220,7 +220,8 @@ export class ViewportMover {
           initial_rotation + (current_angle - initial_angle) / DEG_TO_RAD;
         this.rotation = ev.shiftKey
           ? raw_rotation
-          : raw_rotation - (raw_rotation % this.#grid_rotate_buffer);
+          : Math.round(raw_rotation / this.#grid_rotate_buffer) *
+            this.#grid_rotate_buffer;
       };
       this.#rotate.onpointerup = (ev) => {
         this.#rotate.releasePointerCapture(ev.pointerId);
