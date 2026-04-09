@@ -23,7 +23,7 @@
     "dist"
   ],
   "scripts": {
-    "dev": "vite --port 9966",
+    "dev": "vite --port 9966 --host",
     "build": "tsdown src/index.ts",
     "lint": "eslint src/**/*.ts",
     "test": "vitest run",

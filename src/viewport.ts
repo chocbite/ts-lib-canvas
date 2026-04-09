@@ -44,6 +44,7 @@ export class Viewport extends Base {
     infinite_canvas: boolean = false,
   ) {
     super();
+    this.tabIndex = 0;
     this.#resize_observer.observe(this);
     this.#canvas_width = canvas_width;
     this.#canvas_height = canvas_height;
@@ -305,16 +306,29 @@ export class Viewport extends Base {
       },
       { capture: true },
     );
-    // Detach mover when clicking outside the viewport
-    document.addEventListener("pointerdown", (e) => {
-      if (!this.contains(e.target as Node)) {
-        this.#detach_mover();
-      }
-    });
-    // Detach mover when the browser window loses focus
-    window.addEventListener("blur", () => {
-      this.#detach_mover();
-    });
+    this.addEventListener(
+      "focusout",
+      (e) => {
+        console.warn("yo");
+
+        e.preventDefault();
+        e.stopPropagation();
+        if (!e.relatedTarget || !this.contains(e.relatedTarget as Node)) {
+          this.#detach_mover();
+        }
+      },
+      { capture: true },
+    );
+    // // Detach mover when clicking outside the viewport
+    // document.addEventListener("pointerdown", (e) => {
+    //   if (!this.contains(e.target as Node)) {
+
+    //   }
+    // });
+    // // Detach mover when the browser window loses focus
+    // window.addEventListener("blur", () => {
+    //   this.#detach_mover();
+    // });
   }
 
   #pan_coordinates(x?: number, y?: number) {
