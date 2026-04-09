@@ -1,4 +1,4 @@
-import { none, some, type Option } from "@chocbite/ts-lib-result";
+import { some, type Option } from "@chocbite/ts-lib-result";
 import { svg } from "@chocbite/ts-lib-svg";
 
 export abstract class ViewportElement {
@@ -163,73 +163,11 @@ export abstract class ViewportElement {
     if (this.optimal_ratio().none) {
       // No optimal ratio: update the coordinate system to match the new
       // display size and notify the descendant so it can re-layout.
-      this.canvas.setAttribute(
-        "viewBox",
-        `0 0 ${this.#width} ${this.#height}`,
-      );
+      this.canvas.setAttribute("viewBox", `0 0 ${this.#width} ${this.#height}`);
       this.on_resize(this.#width, this.#height);
     }
     // When an optimal ratio exists the viewBox stays at the default
     // dimensions.  preserveAspectRatio="none" ensures the content is
     // stretched/scaled to fill the (possibly non-uniform) display size.
-  }
-}
-
-export class ViewportElementTest extends ViewportElement {
-  protected element_name(): string {
-    return "viewport";
-  }
-  protected element_name_space(): string {
-    return "editor";
-  }
-
-  default_width(): number {
-    return 64;
-  }
-  default_height(): number {
-    return 64;
-  }
-
-  constructor() {
-    super();
-    this.canvas.appendChild(
-      svg.rectangle_from_corner(0, 0, 64, 64, 0).s("red").f("none").elem,
-    );
-  }
-}
-
-export class ViewportElementDynamicTest extends ViewportElement {
-  protected element_name(): string {
-    return "viewport-dynamic";
-  }
-  protected element_name_space(): string {
-    return "editor";
-  }
-
-  default_width(): number {
-    return 64;
-  }
-  default_height(): number {
-    return 64;
-  }
-
-  optimal_ratio(): Option<number> {
-    return none();
-  }
-
-  #rect: SVGRectElement;
-
-  constructor() {
-    super();
-    this.#rect = svg
-      .rectangle_from_corner(0, 0, 64, 64, 0)
-      .s("blue")
-      .f("none").elem;
-    this.canvas.appendChild(this.#rect);
-  }
-
-  protected on_resize(width: number, height: number): void {
-    this.#rect.setAttribute("width", width.toString());
-    this.#rect.setAttribute("height", height.toString());
   }
 }

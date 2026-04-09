@@ -96,8 +96,8 @@ export class Viewport extends Base {
     let initial_x = 0;
     let initial_y = 0;
     let initial_id = 0;
-    let second_initial_x = 0;
-    let second_initial_y = 0;
+    // let second_initial_x = 0;
+    // let second_initial_y = 0;
     let second_initial_id = 0;
 
     //Middle Mouse
@@ -130,8 +130,8 @@ export class Viewport extends Base {
           initial_y = e.offsetY;
           initial_id = e.pointerId;
         } else if (count === 1) {
-          second_initial_x = e.offsetX;
-          second_initial_y = e.offsetY;
+          // second_initial_x = e.offsetX;
+          // second_initial_y = e.offsetY;
           second_initial_id = e.pointerId;
         }
         count++;
