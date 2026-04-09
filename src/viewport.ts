@@ -122,23 +122,26 @@ export class Viewport extends Base {
 
         if (count >= 2) return;
 
-        // Element selection: detect clicks on the mover or viewport elements
-        const target = e.target as Element;
-        if (target.closest(".viewport-mover")) return;
-        const elementCanvas = target.closest(".viewport-element");
-        if (elementCanvas) {
-          const element = this.#elements.find(
-            (el) => el.canvas === elementCanvas,
-          );
-          if (element) {
-            this.attach_mover(element);
-            return;
+        // For touch, a second finger should only initiate pinch-zoom
+        // without affecting element selection or mover state.
+        // For mouse, always handle element selection and mover detach.
+        if (count === 0 || e.pointerType === "mouse") {
+          // Element selection: detect clicks on the mover or viewport elements
+          const target = e.target as Element;
+          if (target.closest(".viewport-mover")) return;
+          const elementCanvas = target.closest(".viewport-element");
+          if (elementCanvas) {
+            const element = this.#elements.find(
+              (el) => el.canvas === elementCanvas,
+            );
+            if (element) {
+              this.attach_mover(element);
+              return;
+            }
           }
-        }
-        this.#detach_mover();
+          this.#detach_mover();
 
-        //Double Click Reset Position (only for first finger)
-        if (count === 0) {
+          //Double Click Reset Position
           const now = performance.now();
           if (now - double_click < 300) {
             this.#pan_coordinates(0, 0);
