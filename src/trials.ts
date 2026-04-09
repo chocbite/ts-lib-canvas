@@ -13,4 +13,8 @@ vp.elements = [elem, elem_dynamic];
 window.elem = elem;
 window.elem_dynamic = elem_dynamic;
 window.viewport = vp;
+
+elem.rotation_center_x = 0;
+elem.rotation_center_y = 0;
+
 vp.attach_mover(elem);
