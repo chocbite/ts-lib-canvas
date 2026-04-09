@@ -3,8 +3,8 @@ svg.viewport-mover {
 
   > rect {
     fill: transparent;
-    stroke: pink;
-    stroke-width: 2px;
+    stroke: black;
+    stroke-dasharray: 2, 2;
     pointer-events: none;
   }
 
@@ -46,6 +46,20 @@ svg.viewport-mover {
       cursor: ew-resize;
       > path {
         fill: none;
+      }
+    }
+
+    &.rotation-center {
+      pointer-events: none;
+      > circle {
+        fill: none;
+        stroke: pink;
+        stroke-width: 1px;
+        r: 5px;
+      }
+      > line {
+        stroke: pink;
+        stroke-width: 1px;
       }
     }
   }
