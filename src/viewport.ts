@@ -106,6 +106,22 @@ export class Viewport extends Base {
       if (e.pointerType === "mouse" || e.pointerType === "touch") {
         e.preventDefault();
         e.stopPropagation();
+
+        // Element selection: detect clicks on the mover or viewport elements
+        const target = e.target as Element;
+        if (target.closest(".viewport-mover")) return;
+        const elementCanvas = target.closest(".viewport-element");
+        if (elementCanvas) {
+          const element = this.#elements.find(
+            (el) => el.canvas === elementCanvas,
+          );
+          if (element) {
+            this.attach_mover(element);
+            return;
+          }
+        }
+        this.#detach_mover();
+
         //Double Click Reset Position
         const now = performance.now();
         if (now - double_click < 300) {
@@ -198,6 +214,12 @@ export class Viewport extends Base {
       },
       { capture: true },
     );
+    // Detach mover when clicking outside the viewport
+    document.addEventListener("pointerdown", (e) => {
+      if (!this.contains(e.target as Node)) {
+        this.#detach_mover();
+      }
+    });
   }
 
   #pan_coordinates(x?: number, y?: number) {
@@ -305,6 +327,7 @@ export class Viewport extends Base {
   //     |  __| | |    |  __| | |\/| |  __| | . ` |  | |  \___ \
   //     | |____| |____| |____| |  | | |____| |\  |  | |  ____) |
   //     |______|______|______|_|  |_|______|_| \_|  |_| |_____/
+  #elements: readonly ViewportElement[] = [];
   #state_sub?: StateInferSub<State<ViewportElement[]>>;
 
   set elements(elements: ViewportElement[] | State<ViewportElement[]>) {
@@ -320,6 +343,7 @@ export class Viewport extends Base {
   }
 
   #update_rows(rows: readonly ViewportElement[]) {
+    this.#elements = rows;
     if (rows.length === 0) {
       this.#canvas_elements.replaceChildren();
       return;
@@ -382,6 +406,10 @@ export class Viewport extends Base {
       this.#grid_y,
       this.#grid_rotate,
     )).attach_to_element(move, this.#canvas);
+  }
+
+  #detach_mover() {
+    this.#mover?.dettach_from_element();
   }
 }
 define_element(Viewport);

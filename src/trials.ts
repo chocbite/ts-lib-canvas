@@ -77,5 +77,3 @@ vp.elements = [elem, elem_dynamic];
 
 elem.rotation_center_x = 0;
 elem.rotation_center_y = 0;
-
-vp.attach_mover(elem);
