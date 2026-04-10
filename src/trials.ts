@@ -20,7 +20,7 @@ export class ViewportElementTest extends ViewportElement {
   constructor() {
     super();
     this.canvas.appendChild(
-      svg.rectangle_from_corner(0, 0, 64, 64, 0).s("red").f("none").elem,
+      svg.rectangle_from_corner(0, 0, 64, 64, 0).s("red").f("green").elem,
     );
   }
 }
