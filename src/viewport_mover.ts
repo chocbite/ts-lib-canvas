@@ -93,6 +93,7 @@ export class ViewportMover {
     grid_rotate.sub((val) => {
       this.#grid_rotate_buffer = val.value;
     }, true);
+    this.#canvas.tabIndex = -1;
     this.#setup_position();
     this.#setup_corner(this.#nw_corner, -1, -1);
     this.#setup_corner(this.#ne_corner, 1, -1);

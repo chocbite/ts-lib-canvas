@@ -20,20 +20,7 @@ export class Viewport extends Base {
   #viewport_width_half: number = 0;
   #viewport_height: number = 0;
   #viewport_height_half: number = 0;
-  #resize_observer = new ResizeObserver((a) => {
-    this.#viewport_width = a[0].contentRect.width;
-    this.#viewport_width_half = this.#viewport_width / 2;
-    this.#viewport_height = a[0].contentRect.height;
-    this.#viewport_height_half = this.#viewport_height / 2;
-    this.#pan_coordinates(
-      this.#pan_x.ok() + (a[0].contentRect.width - this.#viewport_width) / 2,
-      this.#pan_y.ok() + (a[0].contentRect.height - this.#viewport_height) / 2,
-    );
-    this.#root.setAttribute(
-      "viewBox",
-      `0 0 ${this.#viewport_width} ${this.#viewport_height}`,
-    );
-  });
+
   #root = this.appendChild(svg.create("svg").elem);
   #panner;
   #zoomer;
@@ -44,8 +31,7 @@ export class Viewport extends Base {
     infinite_canvas: boolean = false,
   ) {
     super();
-    this.tabIndex = 0;
-    this.#resize_observer.observe(this);
+    this.tabIndex = -1;
     this.#canvas_width = canvas_width;
     this.#canvas_height = canvas_height;
     //Panning
@@ -336,6 +322,31 @@ export class Viewport extends Base {
     );
     this.#zoomer.style.scale = scale.toString();
     this.#zoom.set_ok(scale);
+  }
+
+  #resize_observer = new ResizeObserver((a) => {
+    this.#viewport_width = a[0].contentRect.width;
+    this.#viewport_width_half = this.#viewport_width / 2;
+    this.#viewport_height = a[0].contentRect.height;
+    this.#viewport_height_half = this.#viewport_height / 2;
+    this.#pan_coordinates(
+      this.#pan_x.ok() + (a[0].contentRect.width - this.#viewport_width) / 2,
+      this.#pan_y.ok() + (a[0].contentRect.height - this.#viewport_height) / 2,
+    );
+    this.#root.setAttribute(
+      "viewBox",
+      `0 0 ${this.#viewport_width} ${this.#viewport_height}`,
+    );
+  });
+
+  protected connectedCallback(): void {
+    super.connectedCallback();
+    this.#resize_observer.observe(this);
+  }
+
+  protected disconnectedCallback(): void {
+    super.disconnectedCallback();
+    this.#resize_observer.disconnect();
   }
 
   //       _____          _   ___      __      _____
