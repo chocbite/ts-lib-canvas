@@ -47,7 +47,7 @@
   "dependencies": {
     "@chocbite/ts-lib-math": "^1.1.1",
     "@chocbite/ts-lib-state": "^2.2.0",
-    "@chocbite/ts-lib-base": "^1.7.0",
+    "@chocbite/ts-lib-base": "^1.7.1",
     "@chocbite/ts-lib-icons": "^1.2.0",
     "@chocbite/ts-lib-common": "^1.3.0",
     "@chocbite/ts-lib-svg": "^1.2.0",

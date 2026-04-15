@@ -1,9 +1,28 @@
+import { BaseSVG } from "@chocbite/ts-lib-base";
 import { some, type Option } from "@chocbite/ts-lib-result";
 import { svg } from "@chocbite/ts-lib-svg";
 
-export abstract class ViewportElement {
-  protected abstract element_name(): string;
-  protected abstract element_name_space(): string;
+export abstract class ViewportElement extends BaseSVG {
+  static element_name(): string {
+    return "@abstract@";
+  }
+
+  static element_name_space(): string {
+    return "@abstract@";
+  }
+
+  protected default_canvas(): SVGSVGElement {
+    return svg
+      .svg(
+        this.default_width(),
+        this.default_height(),
+        `0 0 ${this.default_width()} ${this.default_height()}`,
+      )
+      .cl(
+        "viewport-element",
+        `${(this.constructor as typeof ViewportElement).element_name_space()}-${(this.constructor as typeof ViewportElement).element_name()}`,
+      ).elem;
+  }
 
   /**Default width of element when created */
   abstract default_width(): number;
@@ -23,18 +42,8 @@ export abstract class ViewportElement {
    * coordinate space defined by the updated viewBox. */
   protected on_resize(_width: number, _height: number): void {}
 
-  readonly canvas: SVGSVGElement = svg
-    .svg(
-      this.default_width(),
-      this.default_height(),
-      `0 0 ${this.default_width()} ${this.default_height()}`,
-    )
-    .cl(
-      "viewport-element",
-      `${this.element_name_space()}-${this.element_name()}`,
-    ).elem;
-
   constructor() {
+    super();
     // When the element has an optimal ratio, set preserveAspectRatio to "none"
     // so that non-uniform scaling (stretching) is applied when the display
     // dimensions deviate from the optimal ratio.
